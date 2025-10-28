@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Demande de matériel</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 20px;
+  }
+  form {
+    background: white;
+    padding: 25px;
+    max-width: 500px;
+    margin: auto;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  }
+  h2 { text-align: center; color: #333; }
+  label { font-weight: bold; display: block; margin-top: 10px; }
+  small { display: block; color: #777; font-weight: normal; font-size: 0.85em; }
+  input, textarea, select { width: 100%; margin-top: 5px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; }
+  input[type="file"] { padding: 4px; }
+  button { background: #4285f4; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; margin-top: 15px; cursor: pointer; font-size: 1em; }
+  button:hover { background: #3367d6; }
+  #resultat { text-align: center; margin-top: 15px; font-weight: bold; transition: opacity 0.5s; }
+</style>
+</head>
+<body>
+<h2>Formulaire de demande</h2>
+
+<form id="form">
+  <label>Parc :</label>
+  <input type="text" name="parc" placeholder="Si stock, ne pas renseigner">
+
+  <label>Description :</label>
+  <textarea name="description" required placeholder="Décrivez le besoin ou le matériel"></textarea>
+
+  <label>Référence article :</label>
+  <input type="text" name="reference" placeholder="(facultatif)">
+
+  <label>Quantité :</label>
+  <input type="number" name="quantite" min="1" required placeholder="Nombre d’unités">
+
+  <label>Délai :</label>
+  <select name="delai" required>
+    <option value="">-- Sélectionner un délai --</option>
+    <option value="Pour demain">Pour demain</option>
+    <option value="Dans la semaine">Dans la semaine</option>
+    <option value="Non urgent">Non urgent</option>
+  </select>
+
+  <label>Photo (optionnel) :</label>
+  <input type="file" name="photo" accept="image/*">
+
+  <label>Message complémentaire :</label>
+  <textarea name="message" placeholder="(facultatif)"></textarea>
+
+  <button type="submit">Envoyer la demande</button>
+</form>
+
+<p id="resultat"></p>
+
+<script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbzuSkQNnJ9SwJre-C4EAkQ_8YS_WGGjJT6wCEiJLxgnwH1nztiRdNm9VjUP8fu9m-bkQA/exec"; // 🔗 Remplace par ton URL /exec
+const form = document.getElementById("form");
+const resultat = document.getElementById("resultat");
+
+form.addEventListener("submit", e => {
+  e.preventDefault();
+
+  // Crée FormData à partir du formulaire
+  const formData = new FormData(form);
+
+  // Crée un objet simple pour envoyer les champs au script
+  let obj = {};
+  formData.forEach((value, key) => {
+    // Si c'est un fichier, on prend seulement le nom
+    if(value instanceof File) {
+      obj[key] = value.name || "";
+    } else {
+      obj[key] = value;
+    }
+  });
+
+  // Converti en FormData pour le fetch
+  let fd = new FormData();
+  for(const key in obj) {
+    fd.append(key, obj[key]);
+  }
+
+  // Envoi via fetch
+fetch(scriptURL, {
+  method: "POST",
+  body: formData // on envoie le formulaire complet avec fichier
+})
+
+  .then(() => {
+    resultat.style.color = "green";
+    resultat.textContent = "✅ Demande envoyée avec succès !";
+    form.reset();
+    setTimeout(() => { resultat.textContent = ""; }, 3000);
+  })
+  .catch(err => {
+    resultat.style.color = "red";
+    resultat.textContent = "❌ Erreur : " + err.message;
+    setTimeout(() => { resultat.textContent = ""; }, 5000);
+  });
+});
+</script>
+</body>
+</html>
