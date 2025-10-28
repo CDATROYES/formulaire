@@ -4,23 +4,10 @@
 <meta charset="UTF-8">
 <title>Demande de matériel</title>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    margin: 0;
-    padding: 20px;
-  }
-  form {
-    background: white;
-    padding: 25px;
-    max-width: 500px;
-    margin: auto;
-    border-radius: 10px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-  }
+  body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
+  form { background: white; padding: 25px; max-width: 500px; margin: auto; border-radius: 10px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
   h2 { text-align: center; color: #333; }
   label { font-weight: bold; display: block; margin-top: 10px; }
-  small { display: block; color: #777; font-weight: normal; font-size: 0.85em; }
   input, textarea, select { width: 100%; margin-top: 5px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; }
   input[type="file"] { padding: 4px; }
   button { background: #4285f4; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; margin-top: 15px; cursor: pointer; font-size: 1em; }
@@ -53,7 +40,7 @@
   </select>
 
   <label>Photo (optionnel) :</label>
-  <input type="file" name="photo" accept="image/*">
+  <input type="file" id="photo" name="photo" accept="image/*">
 
   <label>Message complémentaire :</label>
   <textarea name="message" placeholder="(facultatif)"></textarea>
@@ -64,54 +51,64 @@
 <p id="resultat"></p>
 
 <script>
-const scriptURL = "https://script.google.com/macros/s/AKfycbx-oqMFhiv11bchtPu9tiAYzP6JAgSB9V2nu6wGoM5HddNXXAcxCnnaF5Jn1-X0OD4_hg/exec"; // 🔗 Remplace par ton URL /exec
+const scriptURL = "https://script.google.com/macros/s/AKfycbwLg3ZDHLD2KNx-rOgBmYgXdScqYDlHoT4Y76O1I47gMK1812Rqwt0Enyjvd8dzRHEZNQ/exec"; // 🔗 à remplacer
+
 const form = document.getElementById("form");
 const resultat = document.getElementById("resultat");
 
-form.addEventListener("submit", e => {
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  resultat.textContent = "⏳ Envoi en cours...";
 
-  // Crée FormData à partir du formulaire
   const formData = new FormData(form);
+  const file = formData.get("photo");
 
-  // Crée un objet simple pour envoyer les champs au script
-  let obj = {};
-  formData.forEach((value, key) => {
-    // Si c'est un fichier, on prend seulement le nom
-    if(value instanceof File) {
-      obj[key] = value.name || "";
-    } else {
-      obj[key] = value;
-    }
-  });
-
-  // Converti en FormData pour le fetch
-  let fd = new FormData();
-  for(const key in obj) {
-    fd.append(key, obj[key]);
+  let base64 = "";
+  if (file && file.size > 0) {
+    base64 = await toBase64(file);
   }
 
-  // Envoi via fetch
-fetch(scriptURL, {
-  method: "POST",
-  body: formData // on envoie le formulaire complet avec fichier
-})
+  const data = {
+    parc: formData.get("parc"),
+    description: formData.get("description"),
+    reference: formData.get("reference"),
+    quantite: formData.get("quantite"),
+    delai: formData.get("delai"),
+    message: formData.get("message"),
+    photo: base64 ? base64.split(",")[1] : "", // seulement les données brutes
+    mimeType: file ? file.type : ""
+  };
 
-  .then(() => {
-    resultat.style.color = "green";
-    resultat.textContent = "✅ Demande envoyée avec succès !";
-    form.reset();
-    setTimeout(() => { resultat.textContent = ""; }, 3000);
+  fetch(scriptURL, {
+    method: "POST",
+    body: new URLSearchParams(data)
+  })
+  .then(res => res.json())
+  .then(response => {
+    if (response.status === "success") {
+      resultat.style.color = "green";
+      resultat.textContent = "✅ Demande envoyée avec succès !";
+      form.reset();
+    } else {
+      resultat.style.color = "red";
+      resultat.textContent = "❌ Erreur : " + response.message;
+    }
   })
   .catch(err => {
     resultat.style.color = "red";
-    resultat.textContent = "❌ Erreur : " + err.message;
-    setTimeout(() => { resultat.textContent = ""; }, 5000);
+    resultat.textContent = "⚠️ Erreur de connexion : " + err.message;
   });
 });
+
+// Convertit le fichier en Base64
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+  });
+}
 </script>
 </body>
 </html>
-
-
-
