@@ -2,72 +2,168 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Demande de matériel</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
-  form { background: white; padding: 25px; max-width: 500px; margin: auto; border-radius: 10px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
-  h2 { text-align: center; color: #333; }
-  label { font-weight: bold; display: block; margin-top: 10px; }
-  input, textarea, select { width: 100%; margin-top: 5px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; }
-  input[type="file"] { padding: 4px; }
-  button { background: #4285f4; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; margin-top: 15px; cursor: pointer; font-size: 1em; }
-  button:hover { background: #3367d6; }
-  #resultat { text-align: center; margin-top: 15px; font-weight: bold; transition: opacity 0.5s; }
+  * { box-sizing: border-box; }
+  body { 
+    font-family: Arial, sans-serif; 
+    background: #f4f6f8; 
+    margin: 0; 
+    padding: 10px;
+  }
+  form { 
+    background: white; 
+    padding: 20px; 
+    max-width: 600px; 
+    margin: auto; 
+    border-radius: 10px; 
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1); 
+  }
+  h2 { 
+    text-align: center; 
+    color: #333; 
+    margin-top: 0;
+    font-size: 1.5em;
+  }
+  label { 
+    font-weight: bold; 
+    display: block; 
+    margin-top: 15px; 
+    color: #555;
+    font-size: 0.95em;
+  }
+  input, textarea, select { 
+    width: 100%; 
+    margin-top: 5px; 
+    padding: 12px; 
+    border-radius: 5px; 
+    border: 1px solid #ccc; 
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+  input[type="file"] { 
+    padding: 10px;
+    font-size: 14px;
+  }
+  select {
+    background: white;
+    cursor: pointer;
+  }
+  button { 
+    background: #4285f4; 
+    color: white; 
+    border: none; 
+    padding: 14px; 
+    width: 100%; 
+    border-radius: 5px; 
+    margin-top: 20px; 
+    cursor: pointer; 
+    font-size: 1.1em;
+    font-weight: bold;
+    touch-action: manipulation;
+  }
+  button:hover { 
+    background: #3367d6; 
+  }
+  button:active {
+    transform: scale(0.98);
+  }
+  #resultat { 
+    text-align: center; 
+    margin-top: 15px; 
+    font-weight: bold; 
+    transition: opacity 0.5s;
+    padding: 10px;
+    font-size: 0.95em;
+  }
+
+  /* Styles spécifiques smartphone */
+  @media (max-width: 480px) {
+    body {
+      padding: 5px;
+    }
+    form {
+      padding: 15px;
+      border-radius: 8px;
+    }
+    h2 {
+      font-size: 1.3em;
+      margin-bottom: 15px;
+    }
+    label {
+      margin-top: 12px;
+      font-size: 0.9em;
+    }
+    input, textarea, select {
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px;
+      font-size: 1em;
+    }
+  }
 </style>
 </head>
 <body>
-<h2>Formulaire de demande</h2>
-
 <form id="form">
+  <h2>Formulaire de demande</h2>
+  
   <label>Parc :</label>
   <input type="text" name="parc" placeholder="Si stock, ne pas renseigner">
-
+  
   <label>Description :</label>
   <textarea name="description" required placeholder="Décrivez le besoin ou le matériel"></textarea>
-
+  
   <label>Référence article :</label>
   <input type="text" name="reference" placeholder="(facultatif)">
-
+  
   <label>Quantité :</label>
-  <input type="number" name="quantite" min="1" required placeholder="Nombre d’unités">
-
+  <input type="number" name="quantite" min="1" required placeholder="Nombre d'unités">
+  
   <label>Délai :</label>
   <select name="delai" required>
     <option value="">-- Sélectionner un délai --</option>
-    <option value="Pour demain">Pour demain</option>
+    <option value="24/48h">24/48h</option>
     <option value="Dans la semaine">Dans la semaine</option>
     <option value="Non urgent">Non urgent</option>
   </select>
-
+  
   <label>Photo (optionnel) :</label>
-  <input type="file" id="photo" name="photo" accept="image/*">
-
+  <input type="file" id="photo" name="photo" accept="image/*" capture="environment">
+  
   <label>Message complémentaire :</label>
   <textarea name="message" placeholder="(facultatif)"></textarea>
-
+  
   <button type="submit">Envoyer la demande</button>
+  
+  <p id="resultat"></p>
 </form>
 
-<p id="resultat"></p>
-
 <script>
-const scriptURL = "https://script.google.com/macros/s/AKfycbw361U4JcABc_GjAVfyQ7fp4bQbNjfrwuBStCfxoEm0pZMrO1JUWwbL51qx9CZSbecpTQ/exec"; // 🔗 à remplacer
-
+const scriptURL = "https://script.google.com/macros/s/AKfycbw361U4JcABc_GjAVfyQ7fp4bQbNjfrwuBStCfxoEm0pZMrO1JUWwbL51qx9CZSbecpTQ/exec";
 const form = document.getElementById("form");
 const resultat = document.getElementById("resultat");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   resultat.textContent = "⏳ Envoi en cours...";
-
+  resultat.style.color = "#666";
+  
   const formData = new FormData(form);
   const file = formData.get("photo");
-
   let base64 = "";
+  
   if (file && file.size > 0) {
     base64 = await toBase64(file);
   }
-
+  
   const data = {
     parc: formData.get("parc"),
     description: formData.get("description"),
@@ -75,10 +171,10 @@ form.addEventListener("submit", async (e) => {
     quantite: formData.get("quantite"),
     delai: formData.get("delai"),
     message: formData.get("message"),
-    photo: base64 ? base64.split(",")[1] : "", // seulement les données brutes
+    photo: base64 ? base64.split(",")[1] : "",
     mimeType: file ? file.type : ""
   };
-
+  
   fetch(scriptURL, {
     method: "POST",
     body: new URLSearchParams(data)
@@ -89,6 +185,7 @@ form.addEventListener("submit", async (e) => {
       resultat.style.color = "green";
       resultat.textContent = "✅ Demande envoyée avec succès !";
       form.reset();
+      window.scrollTo(0, 0);
     } else {
       resultat.style.color = "red";
       resultat.textContent = "❌ Erreur : " + response.message;
@@ -100,7 +197,6 @@ form.addEventListener("submit", async (e) => {
   });
 });
 
-// Convertit le fichier en Base64
 function toBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -112,4 +208,3 @@ function toBase64(file) {
 </script>
 </body>
 </html>
-
