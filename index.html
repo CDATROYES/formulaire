@@ -44,7 +44,7 @@
     appearance: none;
   }
   textarea {
-    min-height: 100px;
+    min-height: 80px;
     resize: vertical;
   }
   input[type="file"] { 
@@ -55,7 +55,57 @@
     background: white;
     cursor: pointer;
   }
-  button { 
+  
+  /* Styles pour les pièces */
+  .piece-item {
+    background: #f8f9fa;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    position: relative;
+  }
+  .piece-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .piece-numero {
+    font-weight: bold;
+    color: #4285f4;
+    font-size: 1.1em;
+  }
+  .btn-supprimer {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+  }
+  .btn-supprimer:hover {
+    background: #c82333;
+  }
+  
+  .btn-ajouter {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: 5px;
+    margin-top: 15px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+  }
+  .btn-ajouter:hover {
+    background: #218838;
+  }
+  
+  button[type="submit"] { 
     background: #4285f4; 
     color: white; 
     border: none; 
@@ -68,7 +118,7 @@
     font-weight: bold;
     touch-action: manipulation;
   }
-  button:hover { 
+  button[type="submit"]:hover { 
     background: #3367d6; 
   }
   button:active {
@@ -82,8 +132,12 @@
     padding: 10px;
     font-size: 0.95em;
   }
+  
+  .separateur {
+    border-top: 2px solid #4285f4;
+    margin: 25px 0 15px 0;
+  }
 
-  /* Styles spécifiques smartphone */
   @media (max-width: 480px) {
     body {
       padding: 5px;
@@ -104,6 +158,17 @@
       padding: 10px;
       font-size: 16px;
     }
+    .piece-item {
+      padding: 12px;
+    }
+    .piece-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .btn-supprimer {
+      width: 100%;
+    }
     button {
       padding: 12px;
       font-size: 1em;
@@ -115,31 +180,43 @@
 <form id="form">
   <h2>Formulaire de demande</h2>
   
-  <label>Parc :</label>
-  <input type="text" name="parc" placeholder="Si stock, ne pas renseigner">
+  <label>Parc / Véhicule :</label>
+  <input type="text" name="parc" placeholder="Ex: Véhicule 123 ou Si stock, ne pas renseigner">
   
-  <label>Description :</label>
-  <textarea name="description" required placeholder="Décrivez le besoin ou le matériel"></textarea>
+  <div class="separateur"></div>
   
-  <label>Référence article :</label>
-  <input type="text" name="reference" placeholder="(facultatif)">
+  <div id="listePieces">
+    <div class="piece-item" data-piece="1">
+      <div class="piece-header">
+        <span class="piece-numero">Pièce #1</span>
+      </div>
+      
+      <label>Description :</label>
+      <textarea name="description[]" required placeholder="Ex: Filtre à huile, plaquettes de frein..."></textarea>
+      
+      <label>Référence article :</label>
+      <input type="text" name="reference[]" placeholder="(facultatif)">
+      
+      <label>Quantité :</label>
+      <input type="number" name="quantite[]" min="1" required placeholder="Nombre d'unités" value="1">
+      
+      <label>Délai :</label>
+      <select name="delai[]" required>
+        <option value="">-- Sélectionner un délai --</option>
+        <option value="Pour demain">Pour demain</option>
+        <option value="Dans la semaine">Dans la semaine</option>
+        <option value="Non urgent">Non urgent</option>
+      </select>
+      
+      <label>Photo (optionnel) :</label>
+      <input type="file" name="photo[]" accept="image/*" capture="environment">
+      
+      <label>Commentaire (facultatif) :</label>
+      <textarea name="commentaire[]" placeholder="Informations supplémentaires pour cette pièce"></textarea>
+    </div>
+  </div>
   
-  <label>Quantité :</label>
-  <input type="number" name="quantite" min="1" required placeholder="Nombre d'unités">
-  
-  <label>Délai :</label>
-  <select name="delai" required>
-    <option value="">-- Sélectionner un délai --</option>
-    <option value="24/48h">24/48h</option>
-    <option value="Dans la semaine">Dans la semaine</option>
-    <option value="Non urgent">Non urgent</option>
-  </select>
-  
-  <label>Photo (optionnel) :</label>
-  <input type="file" id="photo" name="photo" accept="image/*" capture="environment">
-  
-  <label>Message complémentaire :</label>
-  <textarea name="message" placeholder="(facultatif)"></textarea>
+  <button type="button" class="btn-ajouter" onclick="ajouterPiece()">➕ Ajouter une autre pièce</button>
   
   <button type="submit">Envoyer la demande</button>
   
@@ -150,6 +227,62 @@
 const scriptURL = "https://script.google.com/macros/s/AKfycbw361U4JcABc_GjAVfyQ7fp4bQbNjfrwuBStCfxoEm0pZMrO1JUWwbL51qx9CZSbecpTQ/exec";
 const form = document.getElementById("form");
 const resultat = document.getElementById("resultat");
+let compteurPieces = 1;
+
+function ajouterPiece() {
+  compteurPieces++;
+  const listePieces = document.getElementById("listePieces");
+  const nouvellePiece = document.createElement("div");
+  nouvellePiece.className = "piece-item";
+  nouvellePiece.setAttribute("data-piece", compteurPieces);
+  nouvellePiece.innerHTML = `
+    <div class="piece-header">
+      <span class="piece-numero">Pièce #${compteurPieces}</span>
+      <button type="button" class="btn-supprimer" onclick="supprimerPiece(this)">🗑️ Supprimer</button>
+    </div>
+    
+    <label>Description :</label>
+    <textarea name="description[]" required placeholder="Ex: Filtre à huile, plaquettes de frein..."></textarea>
+    
+    <label>Référence article :</label>
+    <input type="text" name="reference[]" placeholder="(facultatif)">
+    
+    <label>Quantité :</label>
+    <input type="number" name="quantite[]" min="1" required placeholder="Nombre d'unités" value="1">
+    
+    <label>Délai :</label>
+    <select name="delai[]" required>
+      <option value="">-- Sélectionner un délai --</option>
+      <option value="Pour demain">Pour demain</option>
+      <option value="Dans la semaine">Dans la semaine</option>
+      <option value="Non urgent">Non urgent</option>
+    </select>
+    
+    <label>Photo (optionnel) :</label>
+    <input type="file" name="photo[]" accept="image/*" capture="environment">
+    
+    <label>Commentaire (facultatif) :</label>
+    <textarea name="commentaire[]" placeholder="Informations supplémentaires pour cette pièce"></textarea>
+  `;
+  listePieces.appendChild(nouvellePiece);
+  nouvellePiece.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function supprimerPiece(btn) {
+  const pieceItem = btn.closest(".piece-item");
+  pieceItem.remove();
+  renumeroterPieces();
+}
+
+function renumeroterPieces() {
+  const pieces = document.querySelectorAll(".piece-item");
+  pieces.forEach((piece, index) => {
+    const numero = index + 1;
+    piece.setAttribute("data-piece", numero);
+    piece.querySelector(".piece-numero").textContent = `Pièce #${numero}`;
+  });
+  compteurPieces = pieces.length;
+}
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -157,22 +290,35 @@ form.addEventListener("submit", async (e) => {
   resultat.style.color = "#666";
   
   const formData = new FormData(form);
-  const file = formData.get("photo");
-  let base64 = "";
+  const pieces = [];
   
-  if (file && file.size > 0) {
-    base64 = await toBase64(file);
+  const descriptions = formData.getAll("description[]");
+  const references = formData.getAll("reference[]");
+  const quantites = formData.getAll("quantite[]");
+  const delais = formData.getAll("delai[]");
+  const photos = formData.getAll("photo[]");
+  const commentaires = formData.getAll("commentaire[]");
+  
+  for (let i = 0; i < descriptions.length; i++) {
+    let base64 = "";
+    if (photos[i] && photos[i].size > 0) {
+      base64 = await toBase64(photos[i]);
+    }
+    
+    pieces.push({
+      description: descriptions[i],
+      reference: references[i],
+      quantite: quantites[i],
+      delai: delais[i],
+      commentaire: commentaires[i],
+      photo: base64 ? base64.split(",")[1] : "",
+      mimeType: photos[i] ? photos[i].type : ""
+    });
   }
   
   const data = {
     parc: formData.get("parc"),
-    description: formData.get("description"),
-    reference: formData.get("reference"),
-    quantite: formData.get("quantite"),
-    delai: formData.get("delai"),
-    message: formData.get("message"),
-    photo: base64 ? base64.split(",")[1] : "",
-    mimeType: file ? file.type : ""
+    pieces: JSON.stringify(pieces)
   };
   
   fetch(scriptURL, {
@@ -185,6 +331,31 @@ form.addEventListener("submit", async (e) => {
       resultat.style.color = "green";
       resultat.textContent = "✅ Demande envoyée avec succès !";
       form.reset();
+      document.getElementById("listePieces").innerHTML = `
+        <div class="piece-item" data-piece="1">
+          <div class="piece-header">
+            <span class="piece-numero">Pièce #1</span>
+          </div>
+          <label>Description :</label>
+          <textarea name="description[]" required placeholder="Ex: Filtre à huile, plaquettes de frein..."></textarea>
+          <label>Référence article :</label>
+          <input type="text" name="reference[]" placeholder="(facultatif)">
+          <label>Quantité :</label>
+          <input type="number" name="quantite[]" min="1" required placeholder="Nombre d'unités" value="1">
+          <label>Délai :</label>
+          <select name="delai[]" required>
+            <option value="">-- Sélectionner un délai --</option>
+            <option value="Pour demain">Pour demain</option>
+            <option value="Dans la semaine">Dans la semaine</option>
+            <option value="Non urgent">Non urgent</option>
+          </select>
+          <label>Photo (optionnel) :</label>
+          <input type="file" name="photo[]" accept="image/*" capture="environment">
+          <label>Commentaire (facultatif) :</label>
+          <textarea name="commentaire[]" placeholder="Informations supplémentaires pour cette pièce"></textarea>
+        </div>
+      `;
+      compteurPieces = 1;
       window.scrollTo(0, 0);
     } else {
       resultat.style.color = "red";
