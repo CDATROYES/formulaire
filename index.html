@@ -209,7 +209,7 @@
       </select>
       
       <label>Photo (optionnel) :</label>
-      <input type="file" name="photo[]" accept="image/*" capture="environment">
+      <input type="file" name="photo[]" accept="image/*">
       
       <label>Commentaire (facultatif) :</label>
       <textarea name="commentaire[]" placeholder="Informations supplémentaires pour cette pièce"></textarea>
@@ -253,13 +253,13 @@ function ajouterPiece() {
     <label>Délai :</label>
     <select name="delai[]" required>
       <option value="">-- Sélectionner un délai --</option>
-      <option value="Pour demain">Pour demain</option>
+      <option value="24/48h">24/48h</option>
       <option value="Dans la semaine">Dans la semaine</option>
       <option value="Non urgent">Non urgent</option>
     </select>
     
     <label>Photo (optionnel) :</label>
-    <input type="file" name="photo[]" accept="image/*" capture="environment">
+    <input type="file" name="photo[]" accept="image/*">
     
     <label>Commentaire (facultatif) :</label>
     <textarea name="commentaire[]" placeholder="Informations supplémentaires pour cette pièce"></textarea>
@@ -350,13 +350,22 @@ form.addEventListener("submit", async (e) => {
             <option value="Non urgent">Non urgent</option>
           </select>
           <label>Photo (optionnel) :</label>
-          <input type="file" name="photo[]" accept="image/*" capture="environment">
+          <input type="file" name="photo[]" accept="image/*">
           <label>Commentaire (facultatif) :</label>
           <textarea name="commentaire[]" placeholder="Informations supplémentaires pour cette pièce"></textarea>
         </div>
       `;
       compteurPieces = 1;
       window.scrollTo(0, 0);
+      
+      // Faire disparaître le message après 30 secondes
+      setTimeout(() => {
+        resultat.style.opacity = "0";
+        setTimeout(() => {
+          resultat.textContent = "";
+          resultat.style.opacity = "1";
+        }, 500);
+      }, 30000);
     } else {
       resultat.style.color = "red";
       resultat.textContent = "❌ Erreur : " + response.message;
@@ -379,4 +388,3 @@ function toBase64(file) {
 </script>
 </body>
 </html>
-
