@@ -133,6 +133,31 @@
     font-size: 0.95em;
   }
   
+  .btn-nouvelle-demande {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 5px;
+    margin-top: 15px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    display: inline-block;
+  }
+  .btn-nouvelle-demande:hover {
+    background: #218838;
+  }
+  
+  .message-succes-container {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  
+  .cache {
+    display: none;
+  }
+  
   .separateur {
     border-top: 2px solid #4285f4;
     margin: 25px 0 15px 0;
@@ -177,6 +202,7 @@
 </style>
 </head>
 <body>
+<div id="conteneur-formulaire">
 <form id="form">
   <h2>Formulaire de demande</h2>
   
@@ -203,7 +229,7 @@
       <label>Délai :</label>
       <select name="delai[]" required>
         <option value="">-- Sélectionner un délai --</option>
-        <option value="24/48h">24/48h</option>
+        <option value="Pour demain">Pour demain</option>
         <option value="Dans la semaine">Dans la semaine</option>
         <option value="Non urgent">Non urgent</option>
       </select>
@@ -224,7 +250,7 @@
 </form>
 
 <script>
-const scriptURL = "https://script.google.com/macros/s/AKfycbyV7rSXRilR5de3_f56T1RQcB_np3JrfHkAJ_ouRm458kxJsBf5CGAHwF5dabVPMK-C8g/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbw361U4JcABc_GjAVfyQ7fp4bQbNjfrwuBStCfxoEm0pZMrO1JUWwbL51qx9CZSbecpTQ/exec";
 const form = document.getElementById("form");
 const resultat = document.getElementById("resultat");
 let compteurPieces = 1;
@@ -253,7 +279,7 @@ function ajouterPiece() {
     <label>Délai :</label>
     <select name="delai[]" required>
       <option value="">-- Sélectionner un délai --</option>
-      <option value="24/48h">24/48h</option>
+      <option value="Pour demain">Pour demain</option>
       <option value="Dans la semaine">Dans la semaine</option>
       <option value="Non urgent">Non urgent</option>
     </select>
@@ -388,4 +414,3 @@ function toBase64(file) {
 </script>
 </body>
 </html>
-
