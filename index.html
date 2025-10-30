@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Demande de matériel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <style>
   * { box-sizing: border-box; }
   body { 
@@ -89,6 +90,32 @@
     background: #c82333;
   }
   
+  /* Groupe référence avec bouton scan */
+  .reference-group {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    margin-top: 5px;
+  }
+  .reference-group input {
+    flex: 1;
+    margin-top: 0;
+  }
+  .btn-scan {
+    background: #ff9800;
+    color: white;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.2em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .btn-scan:hover {
+    background: #f57c00;
+  }
+  
   .btn-ajouter {
     background: #28a745;
     color: white;
@@ -133,34 +160,76 @@
     font-size: 0.95em;
   }
   
-  .btn-nouvelle-demande {
-    background: #28a745;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 5px;
-    margin-top: 15px;
-    cursor: pointer;
-    font-size: 1em;
-    font-weight: bold;
-    display: inline-block;
-  }
-  .btn-nouvelle-demande:hover {
-    background: #218838;
-  }
-  
-  .message-succes-container {
-    text-align: center;
-    padding: 40px 20px;
-  }
-  
-  .cache {
-    display: none;
-  }
-  
   .separateur {
     border-top: 2px solid #4285f4;
     margin: 25px 0 15px 0;
+  }
+  
+  /* Scanner modal */
+  .scanner-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+  .scanner-modal.active {
+    display: flex;
+  }
+  .scanner-container {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 90%;
+    max-height: 90%;
+    position: relative;
+  }
+  .scanner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  .scanner-header h3 {
+    margin: 0;
+    color: #333;
+  }
+  .btn-fermer {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+  }
+  #scanner-viewport {
+    width: 100%;
+    max-width: 640px;
+    height: 480px;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #4285f4;
+    border-radius: 5px;
+  }
+  #scanner-viewport video,
+  #scanner-viewport canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .scanner-info {
+    margin-top: 10px;
+    padding: 10px;
+    background: #e3f2fd;
+    border-radius: 5px;
+    text-align: center;
+    color: #1976d2;
   }
 
   @media (max-width: 480px) {
@@ -194,9 +263,23 @@
     .btn-supprimer {
       width: 100%;
     }
+    .reference-group {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .btn-scan {
+      width: 100%;
+      padding: 12px;
+    }
     button {
       padding: 12px;
       font-size: 1em;
+    }
+    #scanner-viewport {
+      height: 300px;
+    }
+    .scanner-container {
+      padding: 10px;
     }
   }
 </style>
@@ -221,7 +304,10 @@
       <textarea name="description[]" required placeholder="Ex: Filtre à huile, plaquettes de frein..."></textarea>
       
       <label>Référence article :</label>
-      <input type="text" name="reference[]" placeholder="(facultatif)">
+      <div class="reference-group">
+        <input type="text" name="reference[]" placeholder="(facultatif)" class="input-reference">
+        <button type="button" class="btn-scan" onclick="ouvrirScanner(this)" title="Scanner un code-barres">📷</button>
+      </div>
       
       <label>Quantité :</label>
       <input type="number" name="quantite[]" min="1" required placeholder="Nombre d'unités" value="1">
@@ -248,12 +334,29 @@
   
   <p id="resultat"></p>
 </form>
+</div>
+
+<!-- Modal Scanner -->
+<div id="scanner-modal" class="scanner-modal">
+  <div class="scanner-container">
+    <div class="scanner-header">
+      <h3>Scanner le code-barres</h3>
+      <button type="button" class="btn-fermer" onclick="fermerScanner()">✕ Fermer</button>
+    </div>
+    <div id="scanner-viewport"></div>
+    <div class="scanner-info">
+      Positionnez le code-barres dans le cadre
+    </div>
+  </div>
+</div>
 
 <script>
 const scriptURL = "https://script.google.com/macros/s/AKfycbyo_D2ss6saobXouG4Nxr3eqwxH77RnfzdcEqqaBEvon6OuclL2WXh0bol_ft_4EE68DQ/exec";
 const form = document.getElementById("form");
 const resultat = document.getElementById("resultat");
 let compteurPieces = 1;
+let inputCible = null;
+let scannerActif = false;
 
 function ajouterPiece() {
   compteurPieces++;
@@ -271,7 +374,10 @@ function ajouterPiece() {
     <textarea name="description[]" required placeholder="Ex: Filtre à huile, plaquettes de frein..."></textarea>
     
     <label>Référence article :</label>
-    <input type="text" name="reference[]" placeholder="(facultatif)">
+    <div class="reference-group">
+      <input type="text" name="reference[]" placeholder="(facultatif)" class="input-reference">
+      <button type="button" class="btn-scan" onclick="ouvrirScanner(this)" title="Scanner un code-barres">📷</button>
+    </div>
     
     <label>Quantité :</label>
     <input type="number" name="quantite[]" min="1" required placeholder="Nombre d'unités" value="1">
@@ -308,6 +414,72 @@ function renumeroterPieces() {
     piece.querySelector(".piece-numero").textContent = `Pièce #${numero}`;
   });
   compteurPieces = pieces.length;
+}
+
+function ouvrirScanner(btn) {
+  inputCible = btn.previousElementSibling;
+  const modal = document.getElementById("scanner-modal");
+  modal.classList.add("active");
+  demarrerScanner();
+}
+
+function fermerScanner() {
+  const modal = document.getElementById("scanner-modal");
+  modal.classList.remove("active");
+  arreterScanner();
+}
+
+function demarrerScanner() {
+  if (scannerActif) return;
+  
+  scannerActif = true;
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.querySelector('#scanner-viewport'),
+      constraints: {
+        facingMode: "environment"
+      }
+    },
+    decoder: {
+      readers: [
+        "code_128_reader",
+        "ean_reader",
+        "ean_8_reader",
+        "code_39_reader",
+        "code_39_vin_reader",
+        "codabar_reader",
+        "upc_reader",
+        "upc_e_reader",
+        "i2of5_reader"
+      ]
+    }
+  }, function(err) {
+    if (err) {
+      console.error(err);
+      alert("Erreur lors de l'accès à la caméra. Veuillez autoriser l'accès à la caméra.");
+      fermerScanner();
+      return;
+    }
+    Quagga.start();
+  });
+
+  Quagga.onDetected(function(result) {
+    const code = result.codeResult.code;
+    if (inputCible) {
+      inputCible.value = code;
+      inputCible.focus();
+    }
+    fermerScanner();
+  });
+}
+
+function arreterScanner() {
+  if (scannerActif) {
+    Quagga.stop();
+    scannerActif = false;
+  }
 }
 
 form.addEventListener("submit", async (e) => {
@@ -365,7 +537,10 @@ form.addEventListener("submit", async (e) => {
           <label>Description :</label>
           <textarea name="description[]" required placeholder="Ex: Filtre à huile, plaquettes de frein..."></textarea>
           <label>Référence article :</label>
-          <input type="text" name="reference[]" placeholder="(facultatif)">
+          <div class="reference-group">
+            <input type="text" name="reference[]" placeholder="(facultatif)" class="input-reference">
+            <button type="button" class="btn-scan" onclick="ouvrirScanner(this)" title="Scanner un code-barres">📷</button>
+          </div>
           <label>Quantité :</label>
           <input type="number" name="quantite[]" min="1" required placeholder="Nombre d'unités" value="1">
           <label>Délai :</label>
@@ -384,7 +559,6 @@ form.addEventListener("submit", async (e) => {
       compteurPieces = 1;
       window.scrollTo(0, 0);
       
-      // Faire disparaître le message après 30 secondes
       setTimeout(() => {
         resultat.style.opacity = "0";
         setTimeout(() => {
@@ -414,5 +588,3 @@ function toBase64(file) {
 </script>
 </body>
 </html>
-
-
