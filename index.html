@@ -108,12 +108,16 @@
     padding: 12px 16px;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 1.2em;
+    font-size: 1.5em;
     white-space: nowrap;
     flex-shrink: 0;
+    line-height: 1;
   }
   .btn-scan:hover {
     background: #f57c00;
+  }
+  .btn-scan:active {
+    transform: scale(0.95);
   }
   
   .btn-ajouter {
@@ -216,6 +220,7 @@
     overflow: hidden;
     border: 2px solid #4285f4;
     border-radius: 5px;
+    background: #000;
   }
   #scanner-viewport video,
   #scanner-viewport canvas {
@@ -230,6 +235,7 @@
     border-radius: 5px;
     text-align: center;
     color: #1976d2;
+    font-weight: bold;
   }
 
   @media (max-width: 480px) {
@@ -306,7 +312,7 @@
       <label>Référence article :</label>
       <div class="reference-group">
         <input type="text" name="reference[]" placeholder="(facultatif)" class="input-reference">
-        <button type="button" class="btn-scan" onclick="ouvrirScanner(this)" title="Scanner un code-barres">⚟</button>
+        <button type="button" class="btn-scan" title="Scanner un code-barres">⚟</button>
       </div>
       
       <label>Quantité :</label>
@@ -328,7 +334,7 @@
     </div>
   </div>
   
-  <button type="button" class="btn-ajouter" onclick="ajouterPiece()">➕ Ajouter une autre pièce</button>
+  <button type="button" class="btn-ajouter">➕ Ajouter une autre pièce</button>
   
   <button type="submit">Envoyer la demande</button>
   
@@ -340,12 +346,12 @@
 <div id="scanner-modal" class="scanner-modal">
   <div class="scanner-container">
     <div class="scanner-header">
-      <h3>Scanner le code-barres</h3>
-      <button type="button" class="btn-fermer" onclick="fermerScanner()">✕ Fermer</button>
+      <h3>📷 Scanner le code-barres</h3>
+      <button type="button" class="btn-fermer">✕ Fermer</button>
     </div>
     <div id="scanner-viewport"></div>
     <div class="scanner-info">
-      Positionnez le code-barres dans le cadre
+      Positionnez le code-barres dans le cadre et maintenez stable
     </div>
   </div>
 </div>
@@ -354,12 +360,39 @@
 const scriptURL = "https://script.google.com/macros/s/AKfycbyo_D2ss6saobXouG4Nxr3eqwxH77RnfzdcEqqaBEvon6OuclL2WXh0bol_ft_4EE68DQ/exec";
 const form = document.getElementById("form");
 const resultat = document.getElementById("resultat");
+const scannerModal = document.getElementById("scanner-modal");
+const btnFermer = document.querySelector(".btn-fermer");
+const btnAjouter = document.querySelector(".btn-ajouter");
+
 let compteurPieces = 1;
 let inputCible = null;
 let scannerActif = false;
 let dernieresLectures = [];
 const SEUIL_CONFIANCE = 0.7;
 const LECTURES_NECESSAIRES = 3;
+
+// Event listeners
+document.addEventListener("DOMContentLoaded", function() {
+  // Boutons scan
+  document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("btn-scan")) {
+      ouvrirScanner(e.target);
+    }
+  });
+  
+  // Bouton fermer scanner
+  btnFermer.addEventListener("click", fermerScanner);
+  
+  // Bouton ajouter pièce
+  btnAjouter.addEventListener("click", ajouterPiece);
+  
+  // Fermer le scanner en cliquant sur le fond
+  scannerModal.addEventListener("click", function(e) {
+    if (e.target === scannerModal) {
+      fermerScanner();
+    }
+  });
+});
 
 function ajouterPiece() {
   compteurPieces++;
@@ -370,7 +403,7 @@ function ajouterPiece() {
   nouvellePiece.innerHTML = `
     <div class="piece-header">
       <span class="piece-numero">Pièce #${compteurPieces}</span>
-      <button type="button" class="btn-supprimer" onclick="supprimerPiece(this)">🗑️ Supprimer</button>
+      <button type="button" class="btn-supprimer">🗑️ Supprimer</button>
     </div>
     
     <label>Description :</label>
@@ -379,7 +412,7 @@ function ajouterPiece() {
     <label>Référence article :</label>
     <div class="reference-group">
       <input type="text" name="reference[]" placeholder="(facultatif)" class="input-reference">
-      <button type="button" class="btn-scan" onclick="ouvrirScanner(this)" title="Scanner un code-barres">📷</button>
+      <button type="button" class="btn-scan" title="Scanner un code-barres">⚟</button>
     </div>
     
     <label>Quantité :</label>
@@ -399,6 +432,13 @@ function ajouterPiece() {
     <label>Commentaire (facultatif) :</label>
     <textarea name="commentaire[]" placeholder="Informations supplémentaires pour cette pièce"></textarea>
   `;
+  
+  // Event listener pour le bouton supprimer
+  const btnSupprimer = nouvellePiece.querySelector(".btn-supprimer");
+  btnSupprimer.addEventListener("click", function() {
+    supprimerPiece(this);
+  });
+  
   listePieces.appendChild(nouvellePiece);
   nouvellePiece.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -420,25 +460,25 @@ function renumeroterPieces() {
 }
 
 function ouvrirScanner(btn) {
+  console.log("Ouverture du scanner...");
   inputCible = btn.previousElementSibling;
-  const modal = document.getElementById("scanner-modal");
-  modal.classList.add("active");
+  scannerModal.classList.add("active");
   demarrerScanner();
 }
 
 function fermerScanner() {
-  const modal = document.getElementById("scanner-modal");
-  modal.classList.remove("active");
+  console.log("Fermeture du scanner...");
+  scannerModal.classList.remove("active");
   arreterScanner();
 }
 
-let dernieresLectures = [];
-const SEUIL_CONFIANCE = 0.7;
-const LECTURES_NECESSAIRES = 3;
-
 function demarrerScanner() {
-  if (scannerActif) return;
+  if (scannerActif) {
+    console.log("Scanner déjà actif");
+    return;
+  }
   
+  console.log("Démarrage du scanner...");
   scannerActif = true;
   dernieresLectures = [];
   
@@ -463,7 +503,7 @@ function demarrerScanner() {
       patchSize: "medium",
       halfSample: true
     },
-    numOfWorkers: 4,
+    numOfWorkers: 2,
     frequency: 10,
     decoder: {
       readers: [
@@ -479,11 +519,12 @@ function demarrerScanner() {
     locate: true
   }, function(err) {
     if (err) {
-      console.error(err);
-      alert("Erreur lors de l'accès à la caméra. Veuillez autoriser l'accès à la caméra.");
+      console.error("Erreur d'initialisation:", err);
+      alert("Erreur lors de l'accès à la caméra. Veuillez autoriser l'accès à la caméra et réessayer.");
       fermerScanner();
       return;
     }
+    console.log("Scanner initialisé, démarrage...");
     Quagga.start();
   });
 
@@ -513,17 +554,23 @@ function demarrerScanner() {
 
   Quagga.onDetected(function(result) {
     const code = result.codeResult.code;
+    console.log("Code détecté:", code);
+    
     const confidence = result.codeResult.decodedCodes
-      .filter(code => code.error !== undefined)
-      .reduce((sum, code) => sum + code.error, 0) / result.codeResult.decodedCodes.length;
+      .filter(c => c.error !== undefined)
+      .reduce((sum, c) => sum + c.error, 0) / result.codeResult.decodedCodes.length;
+    
+    console.log("Confiance:", confidence);
     
     if (confidence < SEUIL_CONFIANCE) {
       dernieresLectures.push(code);
+      console.log("Lectures:", dernieresLectures);
       
       if (dernieresLectures.length >= LECTURES_NECESSAIRES) {
         const codeValide = obtenirCodeConsensus(dernieresLectures);
         
         if (codeValide && inputCible) {
+          console.log("Code validé:", codeValide);
           inputCible.value = codeValide;
           inputCible.focus();
           fermerScanner();
@@ -559,8 +606,10 @@ function obtenirCodeConsensus(lectures) {
 
 function arreterScanner() {
   if (scannerActif) {
+    console.log("Arrêt du scanner...");
     Quagga.stop();
     scannerActif = false;
+    dernieresLectures = [];
   }
 }
 
@@ -621,7 +670,7 @@ form.addEventListener("submit", async (e) => {
           <label>Référence article :</label>
           <div class="reference-group">
             <input type="text" name="reference[]" placeholder="(facultatif)" class="input-reference">
-            <button type="button" class="btn-scan" onclick="ouvrirScanner(this)" title="Scanner un code-barres">📷</button>
+            <button type="button" class="btn-scan" title="Scanner un code-barres">⚟</button>
           </div>
           <label>Quantité :</label>
           <input type="number" name="quantite[]" min="1" required placeholder="Nombre d'unités" value="1">
